@@ -1,0 +1,23 @@
+Id    Defeito injetado                                Estados  Transicoes  Caminhos  Resultado
+------------------------------------------------------------------------------------------------
+M01   T1 leva a EXECUTANDO em vez de PRONTO           FALHOU   FALHOU      FALHOU    morto
+M02   Guarda de admissao: <= trocado por <            passou   FALHOU      FALHOU    morto
+M03   Guarda de admissao invertida (>)                FALHOU   FALHOU      FALHOU    morto
+M04   T3 leva a BLOQUEADO em vez de EXECUTANDO        FALHOU   FALHOU      FALHOU    morto
+M05   T4 nao muda de estado (fica EXECUTANDO)         passou   FALHOU      FALHOU    morto
+M06   T5 executa a acao de T4 (fila errada)           FALHOU   FALHOU      FALHOU    morto
+M07   T6 leva a EXECUTANDO em vez de PRONTO           passou   FALHOU      FALHOU    morto
+M08   T7 grava codigo de saida 137 em vez de 0        passou   FALHOU      FALHOU    morto
+M09   T8 removida (SIGKILL ignorado em PRONTO)        FALHOU   FALHOU      FALHOU    morto
+M10   T9 leva a PRONTO em vez de TERMINADO            passou   FALHOU      FALHOU    morto
+M11   T10 identificada como T7                        passou   FALHOU      FALHOU    morto
+M12   Despacho nao retira da fila de prontos          FALHOU   FALHOU      FALHOU    morto
+M13   Termino nao devolve a memoria                   FALHOU   FALHOU      FALHOU    morto
+M14   Caminho furtivo: TERMINADO aceita ADMITIR       passou   FALHOU      FALHOU    morto
+M15   Evento ignorado em EXECUTANDO altera contador   passou   FALHOU      passou    morto
+M16   Recuperacao de estado corrompido ausente        passou   FALHOU      passou    morto
+M17   T2 nao registra a admissao adiada               passou   FALHOU      FALHOU    morto
+M18   Desbloqueio nao retira da fila de E/S           passou   FALHOU      FALHOU    morto
+------------------------------------------------------------------------------------------------
+Mutantes mortos por suite: estados=7  transicoes=18  caminhos=16  (de 18)
+Escore de mutacao: 18/18 mortos

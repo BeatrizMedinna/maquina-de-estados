@@ -1,0 +1,33 @@
+# Integração contínua: a cada push ou pull request, o GitHub compila o projeto
+# com GCC e Clang e executa todas as verificações automatizadas. Nenhum teste
+# depende de intervenção manual.
+name: testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compilador: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependências (gcovr e lizard)
+        run: pip install gcovr lizard
+      - name: Compilação com avisos tratados como erros
+        run: make CC=${{ matrix.compilador }}
+      - name: Testes de estados, transições e caminhos
+        run: make test CC=${{ matrix.compilador }}
+      - name: AddressSanitizer + UndefinedBehaviorSanitizer
+        run: make sanitizers CC=${{ matrix.compilador }}
+      - name: Cobertura de linhas e desvios
+        if: matrix.compilador == 'gcc'
+        run: make cobertura
+      - name: Complexidade ciclomática
+        run: make complexidade
+      - name: Análise de mutantes
+        if: matrix.compilador == 'gcc'
+        run: make mutacao

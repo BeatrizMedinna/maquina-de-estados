@@ -1,0 +1,945 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------------------
+%  Pacotes
+% ---------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm,headheight=14pt]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs,tabularx,array,multirow,longtable}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning,arrows.meta,calc,quotes}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
+
+\hypersetup{pdftitle={Máquina de Estados: ciclo de vida de um processo},
+            pdfauthor={Caroline Zaiatz; Beatriz Nascimento Costa Medina; Eloisa Sousa de Jesus}}
+
+% ---------------------------------------------------------------------------
+%  Aparência
+% ---------------------------------------------------------------------------
+\definecolor{fundo}{RGB}{246,246,246}
+\definecolor{comentario}{RGB}{110,110,110}
+\definecolor{palavra}{RGB}{30,60,140}
+\definecolor{cadeia}{RGB}{150,40,40}
+\definecolor{borda}{RGB}{200,200,200}
+
+\captionsetup{font=small,labelfont=bf}
+\renewcommand{\lstlistingname}{Listagem}
+
+\lstset{
+  language=C, basicstyle=\ttfamily\footnotesize, keywordstyle=\color{palavra}\bfseries,
+  commentstyle=\color{comentario}\itshape, stringstyle=\color{cadeia},
+  backgroundcolor=\color{fundo}, frame=single, rulecolor=\color{borda},
+  numbers=left, numberstyle=\tiny\color{comentario}, numbersep=6pt,
+  xleftmargin=1.6em, framexleftmargin=1.4em, breaklines=true, columns=fullflexible,
+  keepspaces=true, showstringspaces=false, tabsize=4, captionpos=b,
+  morekeywords={bool,true,false,Estado,Evento,Transicao,Acao,Processo,Sistema,Resultado,ArestaEsp,CaminhoEsp},
+  literate={á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1 {é}{{\'e}}1 {ê}{{\^e}}1
+           {í}{{\'i}}1 {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1 {ú}{{\'u}}1 {ç}{{\c c}}1
+           {Á}{{\'A}}1 {É}{{\'E}}1 {Ó}{{\'O}}1 {Ç}{{\c C}}1 {Δ}{{$\Delta$}}1
+           {δ}{{$\delta$}}1 {λ}{{$\lambda$}}1 {×}{{$\times$}}1
+}
+\lstdefinestyle{saida}{language={}, numbers=none, columns=fixed, basewidth=0.525em, xleftmargin=0pt, framexleftmargin=0pt,
+  basicstyle=\ttfamily\fontsize{7}{8.4}\selectfont, keywordstyle={}, commentstyle={}, stringstyle={}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Máquina de Estados — ciclo de vida de um processo}
+\fancyhead[R]{\small Análise de Algoritmos}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parskip}{3pt}
+
+\newtheorem{proposicao}{Proposição}
+\theoremstyle{definition}
+\newtheorem{definicao}{Definição}
+
+\newcommand{\est}[1]{\textsf{\small #1}}   % nome de estado
+\newcommand{\ev}[1]{\texttt{\small #1}}    % nome de evento
+\newcommand{\VG}{V(G)}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+% ---------------------------------------------------------------------------
+%  Estilos do diagrama
+% ---------------------------------------------------------------------------
+\tikzset{
+  estado/.style={draw, rounded corners=6pt, minimum width=24mm, minimum height=9mm,
+                 font=\sffamily\small\bfseries, fill=white, line width=0.8pt},
+  final/.style={estado, double, double distance=1.6pt},
+  seta/.style={-{Stealth[length=2.6mm]}, line width=0.7pt},
+  rot/.style={font=\scriptsize, fill=white, inner sep=1.5pt, align=center},
+  no/.style={circle, draw, minimum size=8mm, font=\sffamily\small\bfseries, fill=white, line width=0.7pt},
+  regiao/.style={font=\sffamily\small\bfseries, text=red!60!black},
+}
+
+\begin{document}
+
+% ===========================================================================
+%  CAPA
+% ===========================================================================
+\begin{titlepage}
+\centering
+{\large Universidade Católica de Brasília\par}
+\vspace{2mm}
+{\large Análise de Algoritmos\par}
+\vspace{2mm}
+{\normalsize Prof. Zoe Roberto Magalhães Junior\par}
+
+\vspace{3.2cm}
+{\normalsize Trabalho Prático\par}
+\vspace{3mm}
+{\LARGE\bfseries Máquina de Estados:\\[2mm] Ciclo de Vida de um Processo\par}
+\vspace{6mm}
+{\normalsize Especificação de estados, transições e caminhos independentes,\\
+implementação em C e validação por testes automatizados\par}
+
+\vspace{3.2cm}
+\begin{tabular}{ll}
+\textbf{Integrantes} & \textbf{Matrícula} \\[1mm]
+Caroline Zaiatz & UC24101689 \\
+Beatriz Nascimento Costa Medina & UC24101412 \\
+Eloisa Sousa de Jesus & UC23100484 \\
+\end{tabular}
+
+\vfill
+{\small Repositório do projeto (código-fonte, testes, resultados e relatório):\par}
+{\small\texttt{https://github.com/BeatrizMedinna/maquina-de-estados}\par}
+
+\vspace{1.6cm}
+{\normalsize Brasília, novembro de 2026\par}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+% ===========================================================================
+\section{Objetivo}
+% ===========================================================================
+
+Este trabalho implementa, em linguagem C, uma máquina de estados finita e a valida com testes
+automatizados de \textbf{estados}, \textbf{transições} e \textbf{caminhos independentes}. O
+sistema modelado é o \textbf{ciclo de vida de um processo} em um sistema operacional (SO) com
+escalonamento preemptivo. Durante toda a sua existência, um processo está em exatamente um estado,
+e só sai dele quando ocorre um evento externo: o escalonador entrega ou retira a CPU, o temporizador
+sinaliza o fim do quantum, um dispositivo conclui uma operação de entrada e saída (E/S) ou outro
+processo envia um sinal. Por isso o problema é, por natureza, uma máquina de estados
+\cite{silberschatz,tanenbaum}.
+
+\paragraph{Escopo e premissas.} A máquina descreve \emph{um} processo. Quem gera os eventos é o
+ambiente (escalonadores, temporizador, dispositivos e outros processos), que fica fora do modelo. A
+única informação do ambiente que a máquina consulta é a memória livre do sistema, usada na
+\emph{guarda} da admissão. Não fazem parte do modelo: a suspensão para a área de troca
+(\emph{swap}), o estado \emph{zumbi} anterior à chamada \texttt{wait()} do processo pai e o uso de
+várias CPUs (Seção~\ref{sec:finais}).
+
+\paragraph{Regras do sistema.} Os requisitos abaixo são o documento de partida. Os estados e as
+transições das Seções~\ref{sec:estados} e~\ref{sec:transicoes} foram extraídos deles.
+
+\begin{enumerate}[label=\textbf{R\arabic*.}, leftmargin=2.6em]
+  \item Todo processo é criado no estado \emph{novo}: já existe, mas ainda não foi admitido pelo
+        SO e não ocupa memória.
+  \item Quando o escalonador de longo prazo tenta \emph{admitir} o processo, ele é admitido se a
+        memória que exige for menor ou igual à memória livre. Nesse caso a memória é reservada e o
+        processo fica \emph{pronto}, na fila de prontos.
+  \item Se a memória livre for insuficiente, a admissão é \emph{adiada}: o processo continua
+        \emph{novo} e a tentativa é registrada.
+  \item Quando o escalonador de curto prazo \emph{despacha} um processo \emph{pronto}, o contexto dele é
+        carregado e ele passa a \emph{executar} (ocupa a CPU).
+  \item Quando o \emph{quantum} de um processo em execução se esgota (interrupção do temporizador), o
+        contexto é salvo e o processo volta a ficar \emph{pronto}, no fim da fila.
+  \item Quando um processo em execução \emph{solicita E/S} bloqueante, o contexto é salvo e ele fica
+        \emph{bloqueado} na fila do dispositivo.
+  \item Quando a E/S de um processo \emph{bloqueado} é \emph{concluída}, ele volta a ficar \emph{pronto}.
+        Nunca retorna diretamente à CPU.
+  \item Quando um processo em execução \emph{finaliza} (chamada \texttt{exit}), seus recursos são
+        liberados e ele fica \emph{terminado} com código de saída 0.
+  \item Um processo \emph{pronto}, \emph{em execução} ou \emph{bloqueado} que recebe o sinal
+        \texttt{SIGKILL} é \emph{abortado}: sai da fila ou da CPU em que estiver, sua memória é
+        devolvida e ele fica \emph{terminado} com código de saída 137 ($128+9$, a convenção dos
+        \emph{shells} POSIX para término pelo sinal 9).
+  \item Um processo \emph{terminado} não reage a nenhum evento. Um evento que não tem efeito no
+        estado atual (por exemplo, \ev{DESPACHAR} para um processo bloqueado) é \emph{ignorado} e
+        não altera o processo.
+\end{enumerate}
+
+\paragraph{Notação.} $N$ é o número de estados (vértices do grafo), $E$ o número de transições
+(arestas), $P$ o número de nós predicativos (vértices com mais de uma aresta de saída, contados
+com multiplicidade) e $\VG$ a complexidade ciclomática de McCabe \cite{mccabe}. O processo de teste
+exige $m = 256$~KB e o sistema começa com $L = 1024$~KB livres.
+
+\paragraph{Implementação.} O repositório contém a máquina de estados, sua interface, um simulador
+de linha de comando e as três suítes de teste (arquivos \texttt{src/processo.c},
+\texttt{include/processo.h}, \texttt{src/simulador.c} e \texttt{tests/}). Conforme
+as regras de entrega, o relatório mostra apenas os trechos citados no texto; o restante está no
+repositório (Seção~\ref{sec:repo}).
+
+% ===========================================================================
+\section{Especificação do Sistema}
+% ===========================================================================
+
+\subsection{Estados}\label{sec:estados}
+
+\paragraph{Como os estados foram identificados.} Seguimos o roteiro da aula \cite{aula}, em três filtros:
+\begin{itemize}
+  \item \textbf{Análise lexical.} Nos requisitos, os adjetivos de condição estática são
+        \emph{novo}, \emph{pronto}, \emph{em execução}, \emph{bloqueado} e \emph{terminado}.
+        Eles são os candidatos a estado.
+  \item \textbf{Filtro de variáveis.} Um dado que muda sem alterar as regras seguintes é variável,
+        não estado (Tabela~\ref{tab:filtro}). O número de despachos, de contextos salvos e de
+        admissões adiadas muda ao longo da vida do processo, mas nenhuma regra depende dele. A
+        memória exigida só aparece como parâmetro da guarda. Já ``bloqueado'' não pode ser
+        confundido com ``pronto'': os dois estão fora da CPU, mas reagem de modo oposto a
+        \ev{DESPACHAR} e a \ev{ES\_CONCLUIDA} (R4 e R7).
+  \item \textbf{Estabilidade.} Em cada um dos cinco estados o processo fica parado até o próximo
+        evento. Nenhum deles é passagem obrigatória que se resolve sozinha.
+\end{itemize}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{>{\raggedright}p{4.6cm}cL}
+\toprule
+Candidato & Muda as regras? & Decisão \\
+\midrule
+novo, pronto, em execução, bloqueado, terminado & sim & \textbf{estado}: cada um aceita um conjunto diferente de eventos \\
+número de despachos / contextos salvos & não & variável (contador) \\
+número de admissões adiadas & não & variável: a regra R2/R3 é a mesma na 1.\textsuperscript{a} ou na 10.\textsuperscript{a} tentativa \\
+memória exigida $m$, memória livre $L$ & não & dados da guarda $[m \le L]$ de R2/R3 \\
+fila em que o processo está, posse da CPU & --- & consequência do estado (saída de Moore, Tabela~\ref{tab:estados}) \\
+\bottomrule
+\end{tabularx}
+\caption{Filtro de variáveis aplicado aos candidatos extraídos dos requisitos.}
+\label{tab:filtro}
+\end{table}
+
+A Tabela~\ref{tab:estados} define os cinco estados. As cinco colunas da direita formam a
+\textbf{configuração observável} que o processo deve ter em cada estado: memória reservada, presença
+na fila de prontos, posse da CPU, presença na fila de E/S e processo vivo (código de saída $-1$).
+Como dependem só do estado, essas colunas são a \emph{saída de Moore} da máquina \cite{moore}.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{clLccccc}
+\toprule
+Id & Estado & Significado & Mem. & Prontos & CPU & E/S & Vivo \\
+\midrule
+$S_0$ & \est{NOVO}       & criado, ainda não admitido (\textbf{inicial}) & 0 & 0 & 0 & 0 & 1 \\
+$S_1$ & \est{PRONTO}     & admitido, aguarda a CPU na fila de prontos     & 1 & 1 & 0 & 0 & 1 \\
+$S_2$ & \est{EXECUTANDO} & de posse da CPU                                & 1 & 0 & 1 & 0 & 1 \\
+$S_3$ & \est{BLOQUEADO}  & aguarda a conclusão de uma E/S                 & 1 & 0 & 0 & 1 & 1 \\
+$S_4$ & \est{TERMINADO}  & recursos liberados (\textbf{final}, absorvente)& 0 & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabularx}
+\caption{Estados da máquina e configuração observável de cada um (1 = sim, 0 = não).}
+\label{tab:estados}
+\end{table}
+
+\paragraph{Os estados são independentes.} Nenhum estado é redundante. Pela Tabela~\ref{tab:estados},
+as cinco configurações são distintas duas a duas (por exemplo, \est{NOVO} $= 00001$ e
+\est{TERMINADO} $= 00000$ diferem no código de saída). Dois estados com saídas diferentes não podem
+ser equivalentes, porque a palavra vazia já os distingue. Logo, a máquina é \emph{mínima}: nenhum
+estado pode ser fundido a outro sem perder comportamento \cite{hopcroft}. Além disso, todos os
+estados são alcançáveis a partir de \est{NOVO}, e \est{TERMINADO} é alcançável a partir de todos. O
+caso CE-06 verifica isso automaticamente sobre as configurações \emph{observadas} na execução
+(Seção~\ref{sec:testes-estados}). A Listagem~\ref{lst:enum} mostra a codificação dos estados.
+
+\lstinputlisting[linerange={19-27},consecutivenumbers=false,caption={Estados codificados como enumeração (\texttt{include/processo.h}).},label={lst:enum}]{../include/processo.h}
+
+% ---------------------------------------------------------------------------
+\subsection{Transições}\label{sec:transicoes}
+
+\paragraph{Como as transições foram identificadas.} Os \textbf{verbos de ação} dos requisitos
+(\emph{admitir}, \emph{despachar}, \emph{esgotar} o quantum, \emph{solicitar} E/S, \emph{concluir}
+a E/S, \emph{finalizar} e \emph{matar} com \texttt{SIGKILL}) são os sete eventos. Cada combinação
+(estado, evento) descrita nos requisitos virou uma aresta, o que deu dez transições:
+\begin{itemize}
+  \item \textbf{condicionais}: T1 e T2 têm o mesmo par (\est{NOVO}, \ev{ADMITIR}) e se distinguem
+        pela guarda $[m \le L]$ (R2/R3). É o mesmo padrão de um \texttt{if (senha\_valida)};
+  \item \textbf{por temporizador}: T4 é disparada pela interrupção do relógio quando o quantum
+        termina (R5), sem ação do processo. É a transição ``por \emph{timeout}'' da aula;
+  \item \textbf{por evento externo}: as demais são disparadas por chamadas de sistema (T5, T7),
+        pelo escalonador (T3), por interrupções de dispositivo (T6) ou por sinais (T8--T10).
+\end{itemize}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{clllLc}
+\toprule
+Id & Origem & Evento [guarda] & Destino & Ação (saída de Mealy) & Regra \\
+\midrule
+T1  & \est{NOVO}       & \ev{ADMITIR} $[m \le L]$ & \est{PRONTO}     & reservar $m$ KB e inserir na fila de prontos & R2 \\
+T2  & \est{NOVO}       & \ev{ADMITIR} $[m > L]$   & \est{NOVO}       & adiar a admissão (registrar a tentativa)     & R3 \\
+T3  & \est{PRONTO}     & \ev{DESPACHAR}           & \est{EXECUTANDO} & sair da fila e carregar o contexto na CPU    & R4 \\
+T4  & \est{EXECUTANDO} & \ev{FIM\_QUANTUM}        & \est{PRONTO}     & salvar o contexto e voltar à fila de prontos & R5 \\
+T5  & \est{EXECUTANDO} & \ev{SOLICITAR\_ES}       & \est{BLOQUEADO}  & salvar o contexto e entrar na fila de E/S    & R6 \\
+T6  & \est{BLOQUEADO}  & \ev{ES\_CONCLUIDA}       & \est{PRONTO}     & sair da fila de E/S e entrar na de prontos   & R7 \\
+T7  & \est{EXECUTANDO} & \ev{FINALIZAR}           & \est{TERMINADO}  & liberar recursos; código de saída 0          & R8 \\
+T8  & \est{PRONTO}     & \ev{SINAL\_KILL}         & \est{TERMINADO}  & abortar: sair da fila, liberar; código 137   & R9 \\
+T9  & \est{BLOQUEADO}  & \ev{SINAL\_KILL}         & \est{TERMINADO}  & abortar: sair da fila de E/S, liberar; 137   & R9 \\
+T10 & \est{EXECUTANDO} & \ev{SINAL\_KILL}         & \est{TERMINADO}  & abortar: liberar a CPU e a memória; 137      & R9 \\
+\bottomrule
+\end{tabularx}
+\caption{Transições especificadas ($E = 10$).}
+\label{tab:transicoes}
+\end{table}
+
+A função de transição tem de dizer o que acontece em \emph{todos} os $5 \times 7 = 35$ pares
+(estado, evento), e não só nos previstos. A Tabela~\ref{tab:matriz} completa a especificação: 9
+pares produzem as 10 transições (o par (\est{NOVO}, \ev{ADMITIR}) se divide pela guarda), e os
+outros \textbf{26 pares} são ignorados, como manda R10. São justamente esses pares que o desenho
+costuma omitir e que o código precisa tratar.
+
+\begin{table}[H]
+\centering\small
+\setlength{\tabcolsep}{4.5pt}
+\newcommand{\cab}[2]{\shortstack{\texttt{\footnotesize #1}\\\texttt{\footnotesize #2}}}
+\begin{tabular}{lccccccc}
+\toprule
+Estado $\backslash$ Evento & \cab{ADMITIR}{} & \cab{DESPACHAR}{} & \cab{FIM\_}{QUANTUM} & \cab{SOLICITAR\_}{ES} & \cab{ES\_}{CONCLUIDA} & \cab{FINALIZAR}{} & \cab{SINAL\_}{KILL} \\
+\midrule
+\est{NOVO}       & T1 / T2 & ---  & ---  & ---  & ---  & ---  & ---  \\
+\est{PRONTO}     & ---     & T3   & ---  & ---  & ---  & ---  & T8   \\
+\est{EXECUTANDO} & ---     & ---  & T4   & T5   & ---  & T7   & T10  \\
+\est{BLOQUEADO}  & ---     & ---  & ---  & ---  & T6   & ---  & T9   \\
+\est{TERMINADO}  & ---     & ---  & ---  & ---  & ---  & ---  & ---  \\
+\bottomrule
+\end{tabular}
+\caption{Matriz completa estado $\times$ evento. ``---'' indica evento ignorado (o estado e o processo não mudam).}
+\label{tab:matriz}
+\end{table}
+
+\paragraph{Moore ou Mealy?} A máquina é de \textbf{Mealy} \cite{mealy}: a ação depende do par
+(estado, evento), e não só do estado. Dois exemplos mostram isso:
+(i)~T7 e T10 ligam o mesmo par de estados, \est{EXECUTANDO} $\to$ \est{TERMINADO}, mas produzem códigos
+de saída diferentes (0 e 137) conforme a entrada; (ii)~T8, T9 e T10 recebem o mesmo evento, mas
+a limpeza feita depende do estado de origem (fila de prontos, fila de E/S ou CPU). A configuração de
+cada estado (Tabela~\ref{tab:estados}) funciona como saída de Moore. Ela é o \emph{invariante} que
+os testes de estados conferem.
+
+\paragraph{Implementação.} A Listagem~\ref{lst:delta} mostra a estrutura da função de transição
+$\delta$ e de saída $\lambda$. Há um \texttt{switch} externo sobre o estado e um \texttt{switch}
+interno sobre o evento. Cada aresta do diagrama corresponde a exatamente um \texttt{return} que executa a ação e muda
+o estado na mesma operação. Todo par não especificado cai no \texttt{default} interno e retorna o
+resultado ``ignorado'' sem tocar no processo (linha 175). O \texttt{default} externo (linhas
+170--172) trata um valor de estado fora da enumeração, que só ocorre com memória corrompida. Esse
+caminho não existe no grafo do negócio, mas existe no código, e a Seção~\ref{sec:grafo-codigo}
+mostra o efeito disso na contagem de McCabe.
+
+\lstinputlisting[float=tp,basicstyle=\ttfamily\scriptsize,linerange={103-121,135-176},consecutivenumbers=false,caption={Função de transição: blocos de \est{NOVO} (com a guarda) e de \est{EXECUTANDO}, estado final e estado inválido (\texttt{src/processo.c}; os blocos de \est{PRONTO} e \est{BLOQUEADO}, linhas 122--134 e 154--165, seguem o mesmo padrão).},label={lst:delta}]{../src/processo.c}
+
+% ---------------------------------------------------------------------------
+\subsection{Diagrama de Estados}\label{sec:diagrama}
+
+A Figura~\ref{fig:diagrama} representa a máquina na notação de diagramas de estados: o círculo
+preto é o pseudoestado inicial, a borda dupla marca o estado final e cada aresta tem o rótulo
+\emph{evento} [\emph{guarda}] / \emph{ação}, precedido do identificador da transição.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+  \node[estado] (N) at (0,3.9)   {NOVO};
+  \node[estado] (P) at (0,0)     {PRONTO};
+  \node[estado] (E) at (6,0)   {EXECUTANDO};
+  \node[final]  (T) at (12,0)  {TERMINADO};
+  \node[estado] (B) at (6,-3.8){BLOQUEADO};
+  \node[circle, fill=black, inner sep=2.6pt] (I) at (-2.6,3.9) {};
+
+  \draw[seta] (I) -- (N);
+  \draw[seta] (N) -- node[rot, left, xshift=-2pt] {T1: ADMITIR [$m \le L$]\\/ alocar e enfileirar} (P);
+  \draw[seta] (N.north east) .. controls +(1.1,1.2) and +(-1.1,1.2) .. node[rot, above] {T2: ADMITIR [$m > L$] / adiar} (N.north west);
+  \draw[seta] (P.12) to[bend left=16] node[rot, above] {T3: DESPACHAR\\/ carregar contexto} (E.168);
+  \draw[seta] (E.192) to[bend left=16] node[rot, below] {T4: FIM\_QUANTUM\\/ salvar e enfileirar} (P.348);
+  \draw[seta] (E.south) -- node[rot, right] {T5: SOLICITAR\_ES\\/ salvar e bloquear} (B.north);
+  \draw[seta] (B.west) to[bend left=20] node[rot, below left, xshift=4pt] {T6: ES\_CONCLUIDA\\/ mover p/ prontos} (P.south);
+  \draw[seta] (E.12) to[bend left=16] node[rot, above] {T7: FINALIZAR\\/ liberar (saída 0)} (T.168);
+  \draw[seta] (E.348) to[bend right=16] node[rot, below] {T10: SINAL\_KILL\\/ abortar (137)} (T.192);
+  \draw[seta] (P.north east) .. controls +(0.8,4.4) and +(-0.8,4.4) .. node[rot, above] {T8: SINAL\_KILL / abortar (saída 137)} (T.north west);
+  \draw[seta] (B.east) to[bend right=20] node[rot, below right, xshift=-4pt] {T9: SINAL\_KILL\\/ abortar (137)} (T.south);
+\end{tikzpicture}}
+\caption{Diagrama de estados da máquina de Mealy ($N = 5$ estados, $E = 10$ transições).}
+\label{fig:diagrama}
+\end{figure}
+
+\begin{definicao}[máquina formal]\label{def:maquina}
+A máquina é a sétupla $M = (S, \Sigma, \Lambda, \delta, \lambda, s_0, F)$ em que
+\begin{itemize}
+  \item $S = \{\est{NOVO}, \est{PRONTO}, \est{EXECUTANDO}, \est{BLOQUEADO}, \est{TERMINADO}\}$, com
+        $s_0 = \est{NOVO}$ e $F = \{\est{TERMINADO}\}$;
+  \item o alfabeto de entrada é $\Sigma = \{$\ev{ADMITIR}, \ev{DESPACHAR}, \ev{FIM\_QUANTUM},
+        \ev{SOLICITAR\_ES}, \ev{ES\_CONCLUIDA}, \ev{FINALIZAR}, \ev{SINAL\_KILL}$\}$. Junto com o
+        evento, a máquina lê o valor lógico $g = [m \le L]$ da guarda;
+  \item o alfabeto de saída $\Lambda$ contém as oito ações da Tabela~\ref{tab:transicoes} mais a ação
+        \emph{nenhuma};
+  \item $\delta : S \times \Sigma \times \{0,1\} \to S$ e $\lambda : S \times \Sigma \times \{0,1\}
+        \to \Lambda$ são dadas pelas Tabelas~\ref{tab:transicoes} e~\ref{tab:matriz}. Nos 26 pares
+        não especificados, $\delta(s, a, g) = s$ e $\lambda(s, a, g) = \textit{nenhuma}$. O valor de
+        $g$ só importa no par (\est{NOVO}, \ev{ADMITIR}).
+\end{itemize}
+\end{definicao}
+
+% ---------------------------------------------------------------------------
+\subsection{Caminhos}\label{sec:caminhos}
+
+Seja $G$ o grafo dirigido cujos vértices são os estados e cujas arestas são as transições da
+Tabela~\ref{tab:transicoes}. Arestas paralelas (T7 e T10) e laços (T2) contam individualmente.
+
+\paragraph{Validade da fórmula.} McCabe \cite{mccabe} define $\VG = E - N + 2$ para grafos com
+\emph{uma única entrada e uma única saída}, em que todo vértice é alcançável a partir da entrada e a
+saída é alcançável a partir de todo vértice. Ligando a saída à entrada por uma aresta virtual, o
+grafo fica fortemente conexo e o seu número ciclomático vale $(E+1) - N + 1 = E - N + 2$. Esse
+número é a quantidade máxima de circuitos linearmente independentes. Cada circuito que passa pela
+aresta virtual corresponde a um caminho entrada $\to$ saída. A máquina foi especificada de modo
+a satisfazer essas condições: a entrada é o estado inicial \est{NOVO}, a saída é o estado final
+\est{TERMINADO} (que não tem arestas de saída), e as duas condições de alcançabilidade são
+conferidas por busca em largura no caso CC-08. Assim, cada caminho independente é uma \emph{vida
+completa} de um processo, da criação ao término.
+
+\paragraph{Três cálculos de $\VG$.} Os três métodos da aula dão o mesmo valor:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Fórmula das arestas:}
+        \[ \VG = E - N + 2 = 10 - 5 + 2 = \mathbf{7}. \]
+  \item \textbf{Nós predicativos:} um vértice com $k$ arestas de saída contribui com $k-1$
+        decisões. Os graus de saída são \est{NOVO}~2 (T1, T2), \est{PRONTO}~2 (T3, T8),
+        \est{EXECUTANDO}~4 (T4, T5, T7, T10), \est{BLOQUEADO}~2 (T6, T9) e \est{TERMINADO}~0. Logo
+        \[ P = 1 + 1 + 3 + 1 = 6 \quad\Longrightarrow\quad \VG = P + 1 = \mathbf{7}. \]
+        As duas fórmulas coincidem sempre que há uma só saída: $\sum_v (\deg^+(v) - 1)$ sobre os
+        $N-1$ vértices não finais vale $E - (N-1)$, e somando 1 obtém-se $E - N + 2$.
+  \item \textbf{Regiões:} desenhado sem cruzamentos (Figura~\ref{fig:regioes}), o grafo divide o
+        plano em $R_1, \ldots, R_7$, ou seja, \textbf{7} regiões contando a externa. Pela fórmula
+        de Euler para grafos planares conexos, o número de regiões é $E - N + 2$.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.9, every node/.style={transform shape}]
+  \node[no] (N) at (-3.2,0) {N};
+  \node[no] (P) at (0,0)  {P};
+  \node[no] (E) at (4,0)  {E};
+  \node[no] (T) at (8,0)  {T};
+  \node[no] (B) at (4,-3) {B};
+
+  \draw[seta] (N) -- node[rot, above] {T1} (P);
+  \draw[seta] (N.north) .. controls +(-0.2,1.6) and +(-1.6,0.2) .. node[rot, above left] {T2} (N.west);
+  \draw[seta] (P) to[bend left=25] node[rot, above] {T3} (E);
+  \draw[seta] (E) to[bend left=25] node[rot, below] {T4} (P);
+  \draw[seta] (E) -- node[rot, right] {T5} (B);
+  \draw[seta] (B) -- node[rot, below left] {T6} (P);
+  \draw[seta] (E) to[bend left=25] node[rot, above] {T7} (T);
+  \draw[seta] (E) to[bend right=25] node[rot, below] {T10} (T);
+  \draw[seta] (P) .. controls +(1.5,3.2) and +(-1.5,3.2) .. node[rot, above] {T8} (T);
+  \draw[seta] (B) -- node[rot, below right] {T9} (T);
+
+  \node[regiao] at (-3.75,0.55) {R1};
+  \node[regiao] at (2,0)        {R2};
+  \node[regiao] at (6,0)        {R3};
+  \node[regiao] at (3.1,-1.1)   {R4};
+  \node[regiao] at (4.95,-1.1)  {R5};
+  \node[regiao] at (4,1.45)     {R6};
+  \node[regiao] at (8.2,-2.6)   {R7 (externa)};
+\end{tikzpicture}
+\caption{Desenho planar do grafo ($\text{N}=$\est{NOVO}, $\text{P}=$\est{PRONTO},
+$\text{E}=$\est{EXECUTANDO}, $\text{B}=$\est{BLOQUEADO}, $\text{T}=$\est{TERMINADO}) e as 7 regiões.}
+\label{fig:regioes}
+\end{figure}
+
+\paragraph{Construção do conjunto-base (método da linha de base).} Os caminhos foram obtidos pelo
+método de Watson e McCabe \cite{watson}:
+(1)~escolhe-se um caminho típico, a \emph{linha de base}; (2)~em cada vértice de decisão desse
+caminho, troca-se a aresta escolhida por cada uma das outras, voltando ao trajeto mais curto até a
+saída; (3)~repete-se o passo~(2) nas decisões que só aparecem nos caminhos novos. A linha de base C1
+é a vida mais simples de um processo: ser admitido, executar e terminar. As trocas em \est{NOVO}
+(C2), \est{PRONTO} (C3) e \est{EXECUTANDO} (C4, C5, C6) geram cinco caminhos. A decisão em
+\est{BLOQUEADO}, que só aparece em C5, gera C7 (Tabela~\ref{tab:caminhos}).
+
+\begin{table}[H]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{clLcc}
+\toprule
+Id & Decisão trocada & Sequência de estados (transições) & Nova(s) & Saída \\
+\midrule
+C1 & linha de base & \est{N} $\xrightarrow{T1}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T7}$ \est{T} & T1, T3, T7 & 0 \\
+C2 & \est{NOVO}: T2 & \est{N} $\xrightarrow{T2}$ \est{N} $\xrightarrow{T1}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T7}$ \est{T} & T2 & 0 \\
+C3 & \est{PRONTO}: T8 & \est{N} $\xrightarrow{T1}$ \est{P} $\xrightarrow{T8}$ \est{T} & T8 & 137 \\
+C4 & \est{EXECUTANDO}: T4 & \est{N} $\xrightarrow{T1}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T4}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T7}$ \est{T} & T4 & 0 \\
+C5 & \est{EXECUTANDO}: T5 & \est{N} $\xrightarrow{T1}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T5}$ \est{B} $\xrightarrow{T6}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T7}$ \est{T} & T5, T6 & 0 \\
+C6 & \est{EXECUTANDO}: T10 & \est{N} $\xrightarrow{T1}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T10}$ \est{T} & T10 & 137 \\
+C7 & \est{BLOQUEADO}: T9 & \est{N} $\xrightarrow{T1}$ \est{P} $\xrightarrow{T3}$ \est{E} $\xrightarrow{T5}$ \est{B} $\xrightarrow{T9}$ \est{T} & T9 & 137 \\
+\bottomrule
+\end{tabularx}
+\caption{Os $\VG = 7$ caminhos independentes, de \est{NOVO} (entrada) a \est{TERMINADO} (saída).
+Na coluna ``Nova(s)'' estão as arestas que o caminho percorre pela primeira vez no conjunto.}
+\label{tab:caminhos}
+\end{table}
+
+\begin{proposicao}\label{prop:base}
+Os caminhos C1--C7 são linearmente independentes e cobrem as 10 arestas de $G$.
+\end{proposicao}
+\begin{proof}
+Represente cada caminho pelo vetor de $\mathbb{Z}^{10}$ que conta quantas vezes ele percorre cada
+aresta (Tabela~\ref{tab:matriz-caminhos}). Ordene as colunas pela ordem em que cada aresta aparece
+pela primeira vez: T1, T3, T7, T2, T8, T4, T5, T6, T10, T9. Cada caminho C$k$ ($k \ge 2$) percorre
+pelo menos uma aresta que nenhum caminho anterior percorre (coluna ``Nova(s)'' da
+Tabela~\ref{tab:caminhos}). Escolhendo, para cada $k$, a coluna de uma dessas arestas novas (para
+C1, a coluna de T1), obtém-se uma submatriz $7 \times 7$ triangular com diagonal não nula. Basta
+olhar a coluna escolhida para C$k$: ela é nula nas linhas C1, $\ldots$, C$(k-1)$. Essa submatriz
+tem determinante diferente de zero, então o posto é 7 e os vetores são linearmente independentes.
+A cobertura vem da união das colunas ``Nova(s)'', que contém as 10 arestas.
+\end{proof}
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{c*{10}{c}}
+\toprule
+ & T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9 & T10 \\
+\midrule
+C1 & 1 & 0 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+C2 & 1 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+C3 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+C4 & 1 & 0 & 2 & 1 & 0 & 0 & 1 & 0 & 0 & 0 \\
+C5 & 1 & 0 & 2 & 0 & 1 & 1 & 1 & 0 & 0 & 0 \\
+C6 & 1 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+C7 & 1 & 0 & 1 & 0 & 1 & 0 & 0 & 0 & 1 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Matriz caminho $\times$ aresta (número de vezes que cada caminho percorre cada aresta). Seu
+posto, calculado por eliminação de Gauss no caso CC-08, é 7.}
+\label{tab:matriz-caminhos}
+\end{table}
+
+Qualquer outro caminho de \est{NOVO} a \est{TERMINADO} é combinação linear desses sete. Por
+exemplo, a vida de um processo que é preemptado uma vez e depois morto em execução,
+$\text{T1},\text{T3},\text{T4},\text{T3},\text{T10}$, é igual a $\text{C4} - \text{C1} + \text{C6}$.
+Para conferir, some as linhas da Tabela~\ref{tab:matriz-caminhos}: $\text{C4} - \text{C1}$ deixa
+$\text{T3} = 1$, $\text{T4} = 1$ e anula os demais, e somar C6 acrescenta T1, T3 e T10.
+
+\paragraph{Grafo do negócio $\times$ código em C.}\label{sec:grafo-codigo} Aplicada ao código, a
+fórmula $\VG = P + 1$ dá outro número. Em \texttt{processo\_tratar} (Listagem~\ref{lst:delta}), os
+nós predicativos são os 5 \texttt{case} do \texttt{switch} externo, os 9 \texttt{case} dos
+\texttt{switch} internos e o \texttt{if} da guarda. Logo $P = 15$ e $\VG_{\text{código}} = 16$. A
+ferramenta \texttt{lizard} confirma o valor (Seção~\ref{sec:execucao}). A diferença em relação a
+$\VG = 7$ do grafo tem a mesma origem apontada no material da aula: o código tem caminhos que o
+desenho não tem. Cada um dos 16 caminhos do código corresponde a um ramo da função:
+\[
+  \underbrace{10}_{\text{transições T1--T10}} \;+\; \underbrace{5}_{\text{``ignorar'', um por estado}}
+  \;+\; \underbrace{1}_{\text{estado corrompido}} \;=\; 16 \;=\; E + N + 1.
+\]
+Os dois números medem coisas diferentes. Os 7 caminhos do grafo validam o \emph{comportamento
+especificado}, ou seja, as sequências de transições. Os 16 ramos do código validam a
+\emph{robustez da implementação}, isto é, que a máquina também ignora com segurança o que não está
+especificado. As duas coberturas estão nos testes: os 7 caminhos em CC-01--CC-07, os 16 ramos em
+CT-01--CT-10, CT-11 e CT-13, e a cobertura de desvios medida é de 100\%.
+
+% ===========================================================================
+\section{Casos de Teste}\label{sec:testes}
+% ===========================================================================
+
+\paragraph{Automação.} Os testes são 100\% automatizados. Cada critério tem um executável próprio
+(\texttt{teste\_estados}, \texttt{teste\_transicoes} e \texttt{teste\_caminhos}), e o comando
+\texttt{make test} compila e executa os três. Cada suíte termina com código de saída 0 só se todos
+os casos forem aprovados, então o resultado é decidido pelo programa e não por inspeção visual. Um
+mini-arcabouço sem dependências (\texttt{tests/teste.h}) fornece as macros \texttt{VERIFICA} e
+\texttt{VERIFICA\_IGUAL}, que registram cada verificação e informam arquivo, linha e valores em caso
+de falha. O repositório inclui um \emph{workflow} de integração contínua
+(\texttt{.github/workflows/testes.yml}) que repete toda a bateria com GCC e Clang a cada
+\emph{push}.
+
+\paragraph{Oráculo independente.} Os testes não comparam o código com ele mesmo. As
+Tabelas~\ref{tab:estados}, \ref{tab:transicoes} e~\ref{tab:caminhos} foram transcritas como dados em
+\texttt{tests/especificacao.h} (Listagem~\ref{lst:oraculo}), e cada teste confronta o que
+\texttt{processo\_tratar} faz com o que esses dados dizem. Se a implementação e a especificação
+divergirem, o teste falha.
+
+\lstinputlisting[linerange={52-62},consecutivenumbers=false,caption={Início da tabela de transições do oráculo (\texttt{tests/especificacao.h}): cada linha é uma linha da Tabela~\ref{tab:transicoes} com os efeitos esperados.},label={lst:oraculo}]{../tests/especificacao.h}
+
+\paragraph{Preâmbulo por busca em largura.} Para testar um estado ou uma transição, primeiro é
+preciso levar o processo até o estado de origem. A sequência de eventos que faz isso (o
+\emph{preâmbulo}) é calculada pela função \texttt{esp\_preambulo} com uma \textbf{busca em largura
+(BFS)} sobre a tabela do oráculo, a partir de \est{NOVO}. Como a BFS percorre o grafo em camadas,
+ela devolve o caminho com o menor número de arestas \cite{cormen}. Assim, cada teste passa pelo
+menor número possível de transições antes da que está sendo testada.
+
+\paragraph{Ambiente de execução.} Ubuntu 24.04.5 LTS; GCC 13.3.0 e Clang 18.1.3 com
+\texttt{-std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Werror}; \texttt{gcovr} 8.8;
+\texttt{lizard} 1.26.1. As saídas completas de todas as execuções citadas estão em
+\texttt{resultados/}.
+
+% ---------------------------------------------------------------------------
+\subsection{Testes de Estados}\label{sec:testes-estados}
+
+\paragraph{Critério.} Cada estado da Tabela~\ref{tab:estados} é visitado pelo menos uma vez. Ao
+chegar nele, verifica-se:
+(a)~que a máquina está no estado esperado;
+(b)~que a configuração observável é igual à saída de Moore do oráculo e que o invariante
+\texttt{processo\_invariante} é verdadeiro;
+(c)~que a memória livre do sistema é coerente ($L - m$ se a memória está reservada, $L$ caso
+contrário). O caso CE-06 compara as configurações observadas em CE-01--CE-05 duas a duas e exige
+que as $\binom{5}{2} = 10$ sejam diferentes, o que confirma automaticamente que os estados são
+independentes (Seção~\ref{sec:estados}).
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{llLcc}
+\toprule
+Caso & Estado & Preâmbulo (BFS) & Verif. & Resultado \\
+\midrule
+CE-01 & \est{NOVO} (inicial)  & nenhum: \texttt{processo\_criar} deve deixar o processo em \est{NOVO} com contadores zerados & 14 & aprovado \\
+CE-02 & \est{PRONTO}          & \ev{ADMITIR}                                   & 10 & aprovado \\
+CE-03 & \est{EXECUTANDO}      & \ev{ADMITIR} $\to$ \ev{DESPACHAR}              & 10 & aprovado \\
+CE-04 & \est{BLOQUEADO}       & \ev{ADMITIR} $\to$ \ev{DESPACHAR} $\to$ \ev{SOLICITAR\_ES} & 10 & aprovado \\
+CE-05 & \est{TERMINADO} (final) & \ev{ADMITIR} $\to$ \ev{SINAL\_KILL}; exige também código de saída $\neq -1$ & 11 & aprovado \\
+CE-06 & todos                 & independência: 10 pares de configurações observadas distintas & 11 & aprovado \\
+\midrule
+\multicolumn{3}{l}{\textbf{Total: 6 casos, 5 de 5 estados cobertos}} & \textbf{66} & \textbf{6/6} \\
+\bottomrule
+\end{tabularx}
+\caption{Testes de estados.}
+\label{tab:ce}
+\end{table}
+
+O preâmbulo de \est{TERMINADO} é \ev{ADMITIR} $\to$ \ev{SINAL\_KILL} (2 eventos), e não o caminho
+``natural'' com \ev{FINALIZAR} (3 eventos). A BFS escolheu o caminho mais curto do grafo. A saída da
+suíte (extrato de \texttt{resultados/testes.txt}) mostra as configurações medidas, na ordem
+memória, prontos, CPU, E/S, vivo:
+
+\begin{lstlisting}[style=saida]
+[ OK ]  CE-05  Estado TERMINADO (final) e sua configuracao                    (11 verificacoes)
+    preambulo (BFS, 2 eventos): ADMITIR -> SINAL_KILL
+    assinaturas observadas (mem,prontos,cpu,e/s,vivo):
+    NOVO=00001 PRONTO=11001 EXECUTANDO=10101 BLOQUEADO=10011 TERMINADO=00000
+[ OK ]  CE-06  Estados independentes: 10 pares distinguiveis                  (11 verificacoes)
+----------------------------------------------------------------------------------
+Suite de estados: 6 casos, 6 aprovados, 0 reprovados, 66 verificacoes
+\end{lstlisting}
+
+% ---------------------------------------------------------------------------
+\subsection{Testes de Transições}\label{sec:testes-transicoes}
+
+\paragraph{Critério.} Cada uma das 10 transições da Tabela~\ref{tab:transicoes} é disparada pelo
+menos uma vez (CT-01--CT-10). Todos esses casos usam a mesma rotina,
+\texttt{testa\_aresta} (Listagem~\ref{lst:aresta}): leva o processo ao estado de origem pelo
+preâmbulo, ajusta a guarda, dispara o evento e confere 19 propriedades com o oráculo. São elas a
+origem, o destino, o identificador da transição, a ação de Mealy, a configuração de Moore do
+destino (7 verificações), a variação dos três contadores, a variação da memória livre, o código de
+saída e a preservação do PID e da memória exigida.
+
+\lstinputlisting[float=htbp,linerange={18-45},consecutivenumbers=false,caption={Rotina comum aos casos CT-01 a CT-10 (\texttt{tests/teste\_transicoes.c}).},label={lst:aresta}]{../tests/teste_transicoes.c}
+
+\paragraph{Valores-limite da guarda.} A guarda $[m \le L]$ é testada exatamente na fronteira. Em
+CT-01 a memória livre é igual à exigida ($L = m = 256$~KB) e o processo deve ser admitido. Em CT-02
+falta 1~KB ($L = 255$~KB) e a admissão deve ser adiada. Um erro comum de implementação, trocar
+$\le$ por $<$, passaria despercebido com valores folgados, mas é detectado aqui (mutante M02 na
+Tabela~\ref{tab:mutantes}).
+
+\paragraph{Robustez (transições não especificadas).} Esta é a parte que o diagrama omite e o código
+tem de tratar. Na literatura de teste de máquinas de estados, um par não especificado que o código
+aceita por engano é chamado de \emph{caminho furtivo} (\emph{sneak path}) \cite{chow,binder}. CT-11 percorre os 26 pares da Tabela~\ref{tab:matriz} marcados com ``---''. Em cada
+um, exige que o resultado seja ``ignorado'', que a ação seja \emph{nenhuma}, que nenhum byte do
+processo mude (\texttt{memcmp} com uma cópia anterior) e que a memória do sistema não se altere.
+Isso inclui os 7 eventos em \est{TERMINADO}, o que confirma que o estado final é absorvente. CT-12
+repete o teste com códigos de evento fora do domínio (\texttt{NUM\_EVENTOS} e 99) nos cinco estados.
+CT-13 corrompe o campo \texttt{estado} (valor 42) e exige a recuperação segura: transição de
+recuperação, processo em \est{TERMINADO} e memória devolvida. A recuperação é testada com o processo
+já admitido e também antes da admissão, quando não há memória a devolver.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{llLcc}
+\toprule
+Caso & Transição & Situação testada & Verif. & Resultado \\
+\midrule
+CT-01 & T1 & \est{NOVO} $-$\ev{ADMITIR}$[L = m = 256]\to$ \est{PRONTO} (limite) & 19 & aprovado \\
+CT-02 & T2 & \est{NOVO} $-$\ev{ADMITIR}$[L = 255 < m]\to$ \est{NOVO} (limite) & 19 & aprovado \\
+CT-03 & T3 & \est{PRONTO} $-$\ev{DESPACHAR}$\to$ \est{EXECUTANDO} & 19 & aprovado \\
+CT-04 & T4 & \est{EXECUTANDO} $-$\ev{FIM\_QUANTUM}$\to$ \est{PRONTO} & 19 & aprovado \\
+CT-05 & T5 & \est{EXECUTANDO} $-$\ev{SOLICITAR\_ES}$\to$ \est{BLOQUEADO} & 19 & aprovado \\
+CT-06 & T6 & \est{BLOQUEADO} $-$\ev{ES\_CONCLUIDA}$\to$ \est{PRONTO} & 19 & aprovado \\
+CT-07 & T7 & \est{EXECUTANDO} $-$\ev{FINALIZAR}$\to$ \est{TERMINADO}, código 0 & 19 & aprovado \\
+CT-08 & T8 & \est{PRONTO} $-$\ev{SINAL\_KILL}$\to$ \est{TERMINADO}, código 137 & 19 & aprovado \\
+CT-09 & T9 & \est{BLOQUEADO} $-$\ev{SINAL\_KILL}$\to$ \est{TERMINADO}, código 137 & 19 & aprovado \\
+CT-10 & T10 & \est{EXECUTANDO} $-$\ev{SINAL\_KILL}$\to$ \est{TERMINADO}, código 137 & 19 & aprovado \\
+CT-11 & --- & 26 pares não especificados ignorados (inclui \est{TERMINADO} absorvente) & 157 & aprovado \\
+CT-12 & --- & eventos fora do domínio ignorados nos 5 estados & 64 & aprovado \\
+CT-13 & --- & estado corrompido $\to$ recuperação segura (com e sem memória alocada) & 24 & aprovado \\
+\midrule
+\multicolumn{3}{l}{\textbf{Total: 13 casos; 10/10 transições e 26/26 pares ignorados cobertos}} & \textbf{435} & \textbf{13/13} \\
+\bottomrule
+\end{tabularx}
+\caption{Testes de transições.}
+\label{tab:ct}
+\end{table}
+
+Ao final, CT-11 imprime a matriz estado $\times$ evento \emph{observada} na execução. Ela é idêntica
+à Tabela~\ref{tab:matriz}:
+
+\begin{lstlisting}[style=saida]
+[ OK ]  CT-11  26 pares nao especificados sao ignorados                       (157 verificacoes)
+    matriz estado x evento observada (Tn = transicao, . = ignorado):
+               ADMITIR DESPACHAR FIM_QUANTUM SOLICITAR_ES ES_CONCLUIDA FINALIZAR SINAL_KILL
+    NOVO       T1/T2   .         .           .            .            .         .         
+    PRONTO     .       T3        .           .            .            .         T8        
+    EXECUTANDO .       .         T4          T5           .            T7        T10       
+    BLOQUEADO  .       .         .           .            T6           .         T9        
+    TERMINADO  .       .         .           .            .            .         .         
+\end{lstlisting}
+
+% ---------------------------------------------------------------------------
+\subsection{Testes de Caminhos}\label{sec:testes-caminhos}
+
+\paragraph{Critério.} Cada um dos $\VG = 7$ caminhos independentes da Tabela~\ref{tab:caminhos} é
+executado do início ao fim (CC-01--CC-07). A rotina \texttt{executa\_caminho}
+(Listagem~\ref{lst:caminho}) parte de um processo recém-criado e, a cada passo, aplica o ajuste de
+memória do ambiente quando o caminho o exige (C2 começa com $L = 100$~KB e depois a memória é
+liberada para $1024$~KB). Em seguida dispara o evento e confere a origem, a transição, a ação, o
+destino e a configuração de Moore. No fim do caminho exige que o processo esteja em
+\est{TERMINADO} com o código de saída previsto, que os contadores sejam iguais ao número de vezes
+que T2, T3 e T4/T5 apareceram, e que a memória livre seja igual à de antes da admissão
+(\emph{conservação}: tudo o que foi reservado foi devolvido).
+
+\lstinputlisting[linerange={29-53},consecutivenumbers=false,caption={Execução de um caminho do conjunto-base e verificações finais (\texttt{tests/teste\_caminhos.c}).},label={lst:caminho}]{../tests/teste_caminhos.c}
+
+\paragraph{Verificação automática do conjunto-base (CC-08).} Os argumentos da
+Seção~\ref{sec:caminhos} também são verificados por programa. O caso calcula $E - N + 2$ e $P + 1$ a
+partir da tabela do oráculo e exige que ambos valham 7. Por busca em largura direta e reversa,
+confirma as pré-condições de McCabe: todos os estados são alcançáveis a partir de \est{NOVO},
+\est{TERMINADO} é alcançável a partir de todos e não tem arestas de saída. Confere ainda que o
+número de caminhos é igual a $\VG$, que cada caminho começa em \est{NOVO}, encadeia corretamente as
+arestas e termina em \est{TERMINADO}, que cada caminho traz uma aresta nova, que as 10 arestas são
+cobertas e que o posto da matriz da Tabela~\ref{tab:matriz-caminhos}, obtido por eliminação de
+Gauss, é 7.
+
+\paragraph{Teste baseado em modelo (CC-09).} Para ir além dos caminhos escolhidos à mão, CC-09 gera
+10\,000 sequências pseudoaleatórias de 1 a 30 eventos, com semente fixa e, portanto,
+reprodutíveis. Antes de cada evento, a memória livre muda aleatoriamente com probabilidade $1/4$,
+assumindo valores que incluem a fronteira 255/256~KB. A cada passo, o resultado da implementação é
+comparado com o que o oráculo prevê para o mesmo estado, evento e guarda (transição, destino,
+variação de memória e invariante).
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{llLcc}
+\toprule
+Caso & Caminho & Cenário & Verif. & Resultado \\
+\midrule
+CC-01 & C1 & linha de base: admitido, executa e termina (código 0) & 39 & aprovado \\
+CC-02 & C2 & admissão adiada por falta de memória e depois concedida & 50 & aprovado \\
+CC-03 & C3 & morto por \texttt{SIGKILL} na fila de prontos (137) & 28 & aprovado \\
+CC-04 & C4 & preemptado por fim de quantum e redespachado & 61 & aprovado \\
+CC-05 & C5 & bloqueia em E/S, volta à fila e termina & 72 & aprovado \\
+CC-06 & C6 & morto por \texttt{SIGKILL} durante a execução (137) & 39 & aprovado \\
+CC-07 & C7 & morto por \texttt{SIGKILL} enquanto bloqueado (137) & 50 & aprovado \\
+CC-08 & ---  & $\VG$ por duas fórmulas, pré-condições, cobertura, posto $=7$ & 85 & aprovado \\
+CC-09 & ---  & 10\,000 sequências aleatórias comparadas com o oráculo & 12 & aprovado \\
+\midrule
+\multicolumn{3}{l}{\textbf{Total: 9 casos, 7 de 7 caminhos independentes cobertos}} & \textbf{436} & \textbf{9/9} \\
+\bottomrule
+\end{tabularx}
+\caption{Testes de caminhos.}
+\label{tab:cc}
+\end{table}
+
+\begin{lstlisting}[style=saida]
+[ OK ]  CC-05  C5 bloqueia em E/S e volta a executar                          (72 verificacoes)
+    NOVO -T1-> PRONTO -T3-> EXECUTANDO -T5-> BLOQUEADO -T6-> PRONTO -T3-> EXECUTANDO -T7-> TERMINADO  (saida 0)
+[ OK ]  CC-08  Conjunto-base: V(G), cobertura e independencia                 (85 verificacoes)
+    V(G) = E - N + 2 = 7 ; V(G) = P + 1 = 7 ; posto da matriz = 7
+[ OK ]  CC-09  Modelo x implementacao: 10 000 sequencias                      (12 verificacoes)
+    10000 sequencias, 153874 passos, 0 divergencias, 4798 terminaram
+    disparos: ignorada=133306
+     T1=6340 T2=4828 T3=3019 T4=654 T5=662 T6=267 T7=731 T8=3117 T9=275 T10=675
+\end{lstlisting}
+
+Nos 153\,874 passos houve \textbf{zero divergências}, e todas as 10 transições foram disparadas
+várias vezes (de 267 vezes, T6, a 6\,340 vezes, T1). Os 4\,798 processos que terminaram são
+exatamente a soma dos disparos de T7, T8, T9 e T10 ($731+3117+275+675$). Isso confirma que só essas
+arestas levam a \est{TERMINADO} e que nenhum processo saiu de lá. A predominância de eventos
+ignorados (86,6\%) é esperada: como os eventos são sorteados de modo uniforme, na maior parte das
+vezes o evento sorteado não é aceito no estado atual. Esse fato reforça os testes de robustez.
+
+% ---------------------------------------------------------------------------
+\subsection{Execução consolidada, cobertura e eficácia dos testes}\label{sec:execucao}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{Lccc}
+\toprule
+Suíte (\texttt{make test}) & Casos & Verificações & Aprovados \\
+\midrule
+Testes de estados (\texttt{bin/teste\_estados})         & 6  & 66  & 6 \\
+Testes de transições (\texttt{bin/teste\_transicoes})   & 13 & 435 & 13 \\
+Testes de caminhos (\texttt{bin/teste\_caminhos})       & 9  & 436 & 9 \\
+\midrule
+\textbf{Total} & \textbf{28} & \textbf{937} & \textbf{28 (100\%)} \\
+\bottomrule
+\end{tabularx}
+\caption{Resumo da execução automatizada (GCC 13.3.0; resultado idêntico com Clang 18.1.3).}
+\label{tab:resumo}
+\end{table}
+
+\paragraph{Cobertura de código.} Com instrumentação do \texttt{gcov}, as três suítes executam
+\textbf{100\% das linhas} (126 de 126) e \textbf{100\% dos desvios} (33 de 33) de
+\texttt{src/processo.c} (\texttt{make cobertura}). As suítes também rodam sem nenhum erro sob
+\emph{AddressSanitizer} e \emph{UndefinedBehaviorSanitizer} (\texttt{make sanitizers}).
+
+\paragraph{Complexidade medida.} O \texttt{lizard} mede $\VG = 16$ para \texttt{processo\_tratar},
+o mesmo valor obtido manualmente na Seção~\ref{sec:grafo-codigo}. As outras 13 funções do arquivo
+têm $\VG$ entre 1 e 2, e a média é 2,5.
+
+\paragraph{Os testes encontram defeitos? (análise de mutantes).} Cobertura de 100\% mostra que o
+código foi \emph{executado}, mas não garante que os testes perceberiam um erro. Para medir a
+eficácia, o \emph{script} \texttt{tests/mutacao.sh} cria 18 cópias de \texttt{src/processo.c}, cada
+uma com um defeito plausível injetado \cite{jia}. Em seguida recompila e executa cada suíte
+separadamente contra cada cópia. Um mutante é \emph{morto} se pelo menos uma suíte falhar.
+
+\begin{table}[H]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{lLccc}
+\toprule
+Id & Defeito injetado & Estados & Transições & Caminhos \\
+\midrule
+M01 & T1 leva a \est{EXECUTANDO} em vez de \est{PRONTO} & morto & morto & morto \\
+M02 & guarda de admissão: $\le$ trocado por $<$ & passou & morto & morto \\
+M03 & guarda de admissão invertida ($>$) & morto & morto & morto \\
+M04 & T3 leva a \est{BLOQUEADO} em vez de \est{EXECUTANDO} & morto & morto & morto \\
+M05 & T4 não muda de estado (fica \est{EXECUTANDO}) & passou & morto & morto \\
+M06 & T5 executa a ação de T4 (fila errada) & morto & morto & morto \\
+M07 & T6 leva a \est{EXECUTANDO} em vez de \est{PRONTO} & passou & morto & morto \\
+M08 & T7 grava código de saída 137 em vez de 0 & passou & morto & morto \\
+M09 & T8 removida (\texttt{SIGKILL} ignorado em \est{PRONTO}) & morto & morto & morto \\
+M10 & T9 leva a \est{PRONTO} em vez de \est{TERMINADO} & passou & morto & morto \\
+M11 & T10 identificada como T7 & passou & morto & morto \\
+M12 & despacho não retira o processo da fila de prontos & morto & morto & morto \\
+M13 & término não devolve a memória & morto & morto & morto \\
+M14 & caminho furtivo: \est{TERMINADO} aceita \ev{ADMITIR} & passou & morto & morto \\
+M15 & evento ignorado em \est{EXECUTANDO} altera um contador & passou & morto & passou \\
+M16 & recuperação de estado corrompido ausente & passou & morto & passou \\
+M17 & T2 não registra a admissão adiada & passou & morto & morto \\
+M18 & desbloqueio não retira o processo da fila de E/S & passou & morto & morto \\
+\midrule
+ & \textbf{Mutantes mortos por suíte (de 18)} & \textbf{7} & \textbf{18} & \textbf{16} \\
+\bottomrule
+\end{tabularx}
+\caption{Análise de mutantes (\texttt{make mutacao}): \textbf{18 de 18 mutantes mortos} pelo conjunto
+das suítes. ``passou'' indica que aquela suíte, sozinha, não percebeu o defeito.}
+\label{tab:mutantes}
+\end{table}
+
+A Tabela~\ref{tab:mutantes} mostra como os três critérios se complementam. A suíte de estados mata
+só 7 mutantes, porque visita cada estado por um único preâmbulo e não exercita as outras arestas. A
+de caminhos mata 16, mas deixa passar M15 e M16, que só aparecem em pares (estado, evento)
+\emph{não especificados}: nenhum caminho do grafo passa por eles. A de transições, que inclui os
+testes de robustez CT-11 e CT-13, mata os 18. O caminho furtivo M14 (um processo terminado que
+``ressuscita'') também é detectado pela suíte de caminhos, graças ao teste baseado em modelo CC-09.
+Esse resultado é o ponto da Seção~\ref{sec:grafo-codigo} medido na prática: cobrir os caminhos do
+grafo não basta, é preciso cobrir também os ramos do código que tratam o que não foi especificado.
+
+% ===========================================================================
+\section{Considerações Finais}\label{sec:finais}
+% ===========================================================================
+
+\begin{itemize}
+  \item \textbf{Modelagem.} O roteiro da aula (análise lexical, filtro de variáveis e
+        estabilidade) levou a cinco estados sem ambiguidade. O filtro de variáveis foi decisivo: o
+        número de tentativas de admissão parece uma candidata a estado, mas a regra é a mesma em
+        qualquer tentativa, então ela virou contador. Já \est{PRONTO} e \est{BLOQUEADO}, que à
+        primeira vista se parecem (o processo está fora da CPU nos dois), reagem de modo diferente
+        aos mesmos eventos e precisam ser estados distintos. A independência dos estados foi
+        demonstrada (configurações de Moore distintas) e verificada automaticamente (CE-06).
+  \item \textbf{Especificar o que não acontece.} A matriz estado $\times$ evento mostrou que a maior
+        parte da função de transição (26 dos 35 pares) descreve eventos ignorados. Sem essa matriz, o
+        comportamento nesses pares ficaria indefinido.
+  \item \textbf{Mealy e Moore no mesmo projeto.} As ações dependem da entrada (T7 e T10 ligam os
+        mesmos estados com saídas diferentes), então a máquina é de Mealy. Mesmo assim, a
+        configuração de cada estado, que é uma saída de Moore, foi o melhor oráculo para os testes de
+        estados.
+  \item \textbf{McCabe exige entrada e saída únicas.} A fórmula $\VG = E - N + 2$ vale para grafos
+        com uma entrada e uma saída. Por isso especificamos um estado inicial e um estado final
+        distintos. Com essa condição, os três cálculos (arestas, nós predicativos e regiões) deram
+        7, e cada caminho independente passou a ser uma vida completa de um processo. A
+        independência linear foi demonstrada (Proposição~\ref{prop:base}) e conferida pelo posto da
+        matriz (CC-08).
+  \item \textbf{Grafo $\times$ código.} O grafo tem $\VG = 7$, e a função que o implementa tem
+        $\VG = 16 = E + N + 1$. Os nove caminhos a mais são os ramos ``ignorar'' (um por estado) e o
+        de estado corrompido. O resultado reproduz a discussão da aula com números medidos: 7 testes
+        validam o comportamento especificado, mas são necessários 16 para cobrir todos os ramos do
+        código.
+  \item \textbf{Hierarquia dos critérios.} Os resultados confirmaram que cobrir estados é o critério
+        mais fraco (7/18 mutantes), que caminhos independentes são mais fortes (16/18) e que testar
+        todas as transições junto com os pares não especificados foi o único critério que, sozinho,
+        detectou todos os defeitos (18/18). Cobertura de 100\% das linhas e dos desvios não é a
+        mesma coisa que eficácia: só a análise de mutantes mostrou que os testes realmente
+        percebem erros.
+  \item \textbf{Automação e reprodutibilidade.} Um oráculo escrito como dados, o preâmbulo por BFS
+        e o teste baseado em modelo com semente fixa tornaram os 937 testes determinísticos e
+        executáveis com um único comando, sem nenhuma inspeção manual.
+  \item \textbf{Limitações e extensões.} O modelo trata um processo e uma CPU, e não inclui os
+        estados suspensos (\emph{swap}) nem o estado zumbi. Acrescentar \est{PRONTO\_SUSPENSO} e
+        \est{BLOQUEADO\_SUSPENSO} levaria ao modelo de sete estados \cite{silberschatz}, e a
+        metodologia continuaria a mesma. Para reduzir o $\VG$ do código, que passa do limite usual
+        de 15 do \texttt{lizard}, uma alternativa é implementar a máquina como uma tabela de
+        transições percorrida por um laço. A complexidade sairia do fluxo de controle e passaria
+        para os dados, mas os testes de caminhos do grafo continuariam necessários.
+\end{itemize}
+
+% ===========================================================================
+\section{Repositório e instruções}\label{sec:repo}
+% ===========================================================================
+
+Código-fonte, testes, \emph{scripts}, resultados brutos e fonte deste relatório:\\
+\texttt{https://github.com/BeatrizMedinna/maquina-de-estados}
+
+\begin{lstlisting}[style=saida,basicstyle=\ttfamily\footnotesize,caption={Compilação, testes e reprodução dos resultados.},label={lst:make}]
+make                # compila (GCC ou Clang, C11, avisos tratados como erros)
+make test           # suites de estados, transicoes e caminhos (saida 0 = tudo aprovado)
+make cobertura      # cobertura de linhas e desvios de src/processo.c (gcovr)
+make complexidade   # V(G) de cada funcao (lizard)
+make mutacao        # analise de mutantes (18 defeitos injetados)
+make sanitizers     # AddressSanitizer + UndefinedBehaviorSanitizer
+make resultados     # regenera todos os arquivos de resultados/
+./bin/simulador ADMITIR DESPACHAR SOLICITAR_ES ES_CONCLUIDA DESPACHAR FINALIZAR   # caminho C5
+\end{lstlisting}
+
+\begin{thebibliography}{99}
+\bibitem{binder} BINDER, R. V. \emph{Testing Object-Oriented Systems: Models, Patterns, and Tools}.
+  Reading: Addison-Wesley, 1999.
+\bibitem{chow} CHOW, T. S. Testing software design modeled by finite-state machines. \emph{IEEE
+  Transactions on Software Engineering}, v. SE-4, n. 3, p. 178--187, 1978.
+\bibitem{cormen} CORMEN, T. H.; LEISERSON, C. E.; RIVEST, R. L.; STEIN, C. \emph{Algoritmos: teoria
+  e prática}. 3. ed. Rio de Janeiro: Elsevier, 2012.
+\bibitem{hopcroft} HOPCROFT, J. E.; MOTWANI, R.; ULLMAN, J. D. \emph{Introdução à teoria de
+  autômatos, linguagens e computação}. 2. ed. Rio de Janeiro: Campus, 2002.
+\bibitem{jia} JIA, Y.; HARMAN, M. An analysis and survey of the development of mutation testing.
+  \emph{IEEE Transactions on Software Engineering}, v. 37, n. 5, p. 649--678, 2011.
+\bibitem{mccabe} McCABE, T. J. A complexity measure. \emph{IEEE Transactions on Software
+  Engineering}, v. SE-2, n. 4, p. 308--320, 1976.
+\bibitem{mealy} MEALY, G. H. A method for synthesizing sequential circuits. \emph{Bell System
+  Technical Journal}, v. 34, n. 5, p. 1045--1079, 1955.
+\bibitem{moore} MOORE, E. F. Gedanken-experiments on sequential machines. In: SHANNON, C. E.;
+  McCARTHY, J. (ed.). \emph{Automata Studies}. Princeton: Princeton University Press, 1956.
+  p. 129--153.
+\bibitem{silberschatz} SILBERSCHATZ, A.; GALVIN, P. B.; GAGNE, G. \emph{Fundamentos de sistemas
+  operacionais}. 9. ed. Rio de Janeiro: LTC, 2015.
+\bibitem{tanenbaum} TANENBAUM, A. S.; BOS, H. \emph{Sistemas operacionais modernos}. 4. ed. São
+  Paulo: Pearson, 2016.
+\bibitem{watson} WATSON, A. H.; McCABE, T. J. \emph{Structured Testing: A Testing Methodology Using
+  the Cyclomatic Complexity Metric}. Gaithersburg: National Institute of Standards and Technology,
+  1996. (NIST Special Publication 500-235).
+\bibitem{aula} UNIVERSIDADE CATÓLICA DE BRASÍLIA. \emph{Modelagem e análise de máquinas de estados
+  finitas (FSM)}. Material didático da disciplina Análise de Algoritmos, 2026.
+\end{thebibliography}
+
+\end{document}

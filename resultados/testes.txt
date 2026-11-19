@@ -1,0 +1,74 @@
+=== TESTES DE ESTADOS ===
+[ OK ]  CE-01  Estado NOVO (inicial) e sua configuracao                       (14 verificacoes)
+    preambulo (BFS, 0 eventos): nenhum (estado inicial)
+[ OK ]  CE-02  Estado PRONTO e sua configuracao                               (10 verificacoes)
+    preambulo (BFS, 1 evento): ADMITIR
+[ OK ]  CE-03  Estado EXECUTANDO e sua configuracao                           (10 verificacoes)
+    preambulo (BFS, 2 eventos): ADMITIR -> DESPACHAR
+[ OK ]  CE-04  Estado BLOQUEADO e sua configuracao                            (10 verificacoes)
+    preambulo (BFS, 3 eventos): ADMITIR -> DESPACHAR -> SOLICITAR_ES
+[ OK ]  CE-05  Estado TERMINADO (final) e sua configuracao                    (11 verificacoes)
+    preambulo (BFS, 2 eventos): ADMITIR -> SINAL_KILL
+    assinaturas observadas (mem,prontos,cpu,e/s,vivo):
+    NOVO=00001 PRONTO=11001 EXECUTANDO=10101 BLOQUEADO=10011 TERMINADO=00000
+[ OK ]  CE-06  Estados independentes: 10 pares distinguiveis                  (11 verificacoes)
+----------------------------------------------------------------------------------
+Suite de estados: 6 casos, 6 aprovados, 0 reprovados, 66 verificacoes
+
+=== TESTES DE TRANSICOES ===
+[ OK ]  CT-01  T1  NOVO -ADMITIR[mem=256 KB, limite]-> PRONTO                 (19 verificacoes)
+[ OK ]  CT-02  T2  NOVO -ADMITIR[mem=255 KB, limite]-> NOVO                   (19 verificacoes)
+[ OK ]  CT-03  T3  PRONTO -DESPACHAR-> EXECUTANDO                             (19 verificacoes)
+[ OK ]  CT-04  T4  EXECUTANDO -FIM_QUANTUM-> PRONTO                           (19 verificacoes)
+[ OK ]  CT-05  T5  EXECUTANDO -SOLICITAR_ES-> BLOQUEADO                       (19 verificacoes)
+[ OK ]  CT-06  T6  BLOQUEADO -ES_CONCLUIDA-> PRONTO                           (19 verificacoes)
+[ OK ]  CT-07  T7  EXECUTANDO -FINALIZAR-> TERMINADO                          (19 verificacoes)
+[ OK ]  CT-08  T8  PRONTO -SINAL_KILL-> TERMINADO                             (19 verificacoes)
+[ OK ]  CT-09  T9  BLOQUEADO -SINAL_KILL-> TERMINADO                          (19 verificacoes)
+[ OK ]  CT-10  T10 EXECUTANDO -SINAL_KILL-> TERMINADO                         (19 verificacoes)
+[ OK ]  CT-11  26 pares nao especificados sao ignorados                       (157 verificacoes)
+    matriz estado x evento observada (Tn = transicao, . = ignorado):
+               ADMITIR DESPACHAR FIM_QUANTUM SOLICITAR_ES ES_CONCLUIDA FINALIZAR SINAL_KILL
+    NOVO       T1/T2   .         .           .            .            .         .         
+    PRONTO     .       T3        .           .            .            .         T8        
+    EXECUTANDO .       .         T4          T5           .            T7        T10       
+    BLOQUEADO  .       .         .           .            T6           .         T9        
+    TERMINADO  .       .         .           .            .            .         .         
+[ OK ]  CT-12  Eventos fora do dominio ignorados nos 5 estados                (64 verificacoes)
+[ OK ]  CT-13  Estado corrompido -> recuperacao segura                        (24 verificacoes)
+----------------------------------------------------------------------------------
+Suite de transicoes: 13 casos, 13 aprovados, 0 reprovados, 435 verificacoes
+
+=== TESTES DE CAMINHOS ===
+[ OK ]  CC-01  C1 linha de base: admite, executa e termina                    (39 verificacoes)
+    NOVO -T1-> PRONTO -T3-> EXECUTANDO -T7-> TERMINADO  (saida 0)
+[ OK ]  CC-02  C2 admissao adiada por falta de memoria                        (50 verificacoes)
+    NOVO -T2-> NOVO -T1-> PRONTO -T3-> EXECUTANDO -T7-> TERMINADO  (saida 0)
+[ OK ]  CC-03  C3 morto por SIGKILL na fila de prontos                        (28 verificacoes)
+    NOVO -T1-> PRONTO -T8-> TERMINADO  (saida 137)
+[ OK ]  CC-04  C4 preemptado por fim de quantum                               (61 verificacoes)
+    NOVO -T1-> PRONTO -T3-> EXECUTANDO -T4-> PRONTO -T3-> EXECUTANDO -T7-> TERMINADO  (saida 0)
+[ OK ]  CC-05  C5 bloqueia em E/S e volta a executar                          (72 verificacoes)
+    NOVO -T1-> PRONTO -T3-> EXECUTANDO -T5-> BLOQUEADO -T6-> PRONTO -T3-> EXECUTANDO -T7-> TERMINADO  (saida 0)
+[ OK ]  CC-06  C6 morto por SIGKILL durante a execucao                        (39 verificacoes)
+    NOVO -T1-> PRONTO -T3-> EXECUTANDO -T10-> TERMINADO  (saida 137)
+[ OK ]  CC-07  C7 morto por SIGKILL enquanto bloqueado                        (50 verificacoes)
+    NOVO -T1-> PRONTO -T3-> EXECUTANDO -T5-> BLOQUEADO -T9-> TERMINADO  (saida 137)
+[ OK ]  CC-08  Conjunto-base: V(G), cobertura e independencia                 (85 verificacoes)
+    V(G) = E - N + 2 = 7 ; V(G) = P + 1 = 7 ; posto da matriz = 7
+    matriz caminho x aresta:     T1  T2  T3  T4  T5  T6  T7  T8  T9 T10
+    C1                            1   0   1   0   0   0   1   0   0   0
+    C2                            1   1   1   0   0   0   1   0   0   0
+    C3                            1   0   0   0   0   0   0   1   0   0
+    C4                            1   0   2   1   0   0   1   0   0   0
+    C5                            1   0   2   0   1   1   1   0   0   0
+    C6                            1   0   1   0   0   0   0   0   0   1
+    C7                            1   0   1   0   1   0   0   0   1   0
+[ OK ]  CC-09  Modelo x implementacao: 10 000 sequencias                      (12 verificacoes)
+    10000 sequencias, 153874 passos, 0 divergencias, 4798 terminaram
+    disparos: ignorada=133306
+     T1=6340 T2=4828 T3=3019 T4=654 T5=662 T6=267 T7=731 T8=3117 T9=275 T10=675
+----------------------------------------------------------------------------------
+Suite de caminhos: 9 casos, 9 aprovados, 0 reprovados, 436 verificacoes
+
+TODAS AS SUITES APROVADAS

@@ -1,0 +1,9 @@
+passo  origem       evento         trans.  acao                   destino      mem.livre
+-----  -----------  -------------  ------  ---------------------  -----------  ---------
+    1  NOVO         ADMITIR        T1      alocar_e_enfileirar    PRONTO          768 KB
+    2  PRONTO       DESPACHAR      T3      carregar_contexto      EXECUTANDO      768 KB
+    3  EXECUTANDO   SOLICITAR_ES   T5      salvar_e_bloquear      BLOQUEADO       768 KB
+    4  BLOQUEADO    ES_CONCLUIDA   T6      mover_para_prontos     PRONTO          768 KB
+    5  PRONTO       DESPACHAR      T3      carregar_contexto      EXECUTANDO      768 KB
+    6  EXECUTANDO   FINALIZAR      T7      liberar_recursos       TERMINADO      1024 KB
+estado final: TERMINADO | codigo de saida: 0 | despachos: 2 | contextos salvos: 1 | admissoes adiadas: 0

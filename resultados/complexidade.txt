@@ -1,0 +1,29 @@
+================================================
+  NLOC    CCN   token  PARAM  length  location  
+------------------------------------------------
+       6      1     32      2       6 alocar_e_enfileirar@21-26@src/processo.c
+       6      1     25      1       6 carregar_contexto@28-33@src/processo.c
+       6      1     25      1       6 salvar_e_enfileirar@35-40@src/processo.c
+       6      1     25      1       6 salvar_e_bloquear@42-47@src/processo.c
+       5      1     20      1       5 mover_para_prontos@49-53@src/processo.c
+      11      2     61      3      11 liberar@56-66@src/processo.c
+       9      1     47      5       9 mudar@69-77@src/processo.c
+      14      1     80      3      14 processo_criar@83-96@src/processo.c
+      67     16    380      3      74 processo_tratar@103-176@src/processo.c
+      10      2    102      1      11 processo_invariante@192-202@src/processo.c
+       4      2     22      1       4 nome_estado@225-228@src/processo.c
+       4      2     22      1       4 nome_evento@229-232@src/processo.c
+       4      2     22      1       4 nome_transicao@233-236@src/processo.c
+       4      2     22      1       4 nome_acao@237-240@src/processo.c
+1 file analyzed.
+==============================================================
+NLOC    Avg.NLOC  AvgCCN  Avg.token  function_cnt    file
+--------------------------------------------------------------
+    181      11.1     2.5       63.2        14     src/processo.c
+
+===============================================================================================================
+No thresholds exceeded (cyclomatic_complexity > 20 or length > 1000 or nloc > 1000000 or parameter_count > 100)
+==========================================================================================
+Total nloc   Avg.NLOC  AvgCCN  Avg.token   Fun Cnt  Warning cnt   Fun Rt   nloc Rt
+------------------------------------------------------------------------------------------
+       181      11.1     2.5       63.2       14            0      0.00    0.00

@@ -1,0 +1,9 @@
+bin/
+*.gcda
+*.gcno
+relatorio/*.aux
+relatorio/*.log
+relatorio/*.out
+relatorio/*.toc
+relatorio/*.fls
+relatorio/*.fdb_latexmk

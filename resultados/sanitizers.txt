@@ -1,0 +1,3 @@
+teste_estados: sem erros de memoria/UB
+teste_transicoes: sem erros de memoria/UB
+teste_caminhos: sem erros de memoria/UB
