@@ -103,7 +103,7 @@ static void ct11(void)
             }
         }
     }
-    VERIFICA_IGUAL(ignorados, NUM_ESTADOS * NUM_EVENTOS - 9);  /* 35 - 9 = 26 */
+    VERIFICA_IGUAL(ignorados, (int)NUM_ESTADOS * (int)NUM_EVENTOS - 9);  /* 35 - 9 = 26 */
 }
 
 static void imprime_matriz(void)
